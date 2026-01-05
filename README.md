@@ -288,13 +288,13 @@ http://localhost:8080
 
 | Method | Endpoint | Description | Status |
 |--------|----------|-------------|--------|
-| GET | `/health` | Health check | ✅ Working |
-| GET | `/products` | Get all products | ✅ Working |
-| GET | `/products?category=X` | Filter by category | ✅ Working |
-| GET | `/products/{id}` | Get specific product | ✅ Working |
-| POST | `/products` | Create new product | ✅ Working |
-| PUT | `/products/{id}` | Update product | ✅ Working |
-| DELETE | `/products/{id}` | Delete product | ✅ Working |
+| GET | `/health` | Health check | Working |
+| GET | `/products` | Get all products | Working |
+| GET | `/products?category=X` | Filter by category | Working |
+| GET | `/products/{id}` | Get specific product | Working |
+| POST | `/products` | Create new product | Working |
+| PUT | `/products/{id}` | Update product | Working |
+| DELETE | `/products/{id}` | Delete product | Working |
 
 ### Detailed Examples
 
