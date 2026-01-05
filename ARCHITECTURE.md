@@ -37,63 +37,43 @@ Adapters are implementations of ports that connect the application to the outsid
 ## In Our Product Catalog Microservice
 
 ```mermaid
-graph LR
-    subgraph UserSide["👤 USER SIDE<br/><br/>What we provide to<br/>the end user"]
-        Actor((User))
-        RestAPI[REST API<br/>Handler<br/><b>ProductHandler</b>]
-        TestAgent[Test<br/>Agent]
+graph TB
+    subgraph External["External World"]
+        HTTP[HTTP Request]
+        MongoDB[(MongoDB Database)]
     end
     
-    subgraph Hexagon["🎯 BUSINESS DOMAIN"]
-        subgraph Ports[""]
-            ServicePort[🔵 Primary Port<br/><i>&lt;interface&gt;</i><br/><b>ProductService</b>]
-            RepoPort[🔵 Secondary Port<br/><i>&lt;interface&gt;</i><br/><b>ProductRepository</b>]
-        end
-        
-        subgraph BusinessLogic["💼 Business Logic"]
-            Domain[<b>Product Entity</b><br/>• Validation<br/>• Business Rules<br/>• Domain Logic]
-        end
-        
-        ServicePort -.->|uses| BusinessLogic
-        BusinessLogic -.->|needs| RepoPort
+    subgraph PrimaryAdapter["Primary Adapter (Inbound/Driving)"]
+        Handler[ProductHandler<br/>Boost.Beast]
     end
     
-    subgraph ServerSide["⚙️ SERVER SIDE<br/><br/>What we depend on<br/>DB, External Services"]
-        MongoDB[(MongoDB<br/>Database)]
-        MongoAdapter[Database<br/>Adapter<br/><b>ProductRepositoryMongo</b>]
-        MockAdapter[Mock<br/>Adapter<br/><i>for testing</i>]
+    subgraph PrimaryPort["Primary Port (Inbound)"]
+        Service[ProductService<br/>Interface]
     end
     
-    Actor -->|HTTP Request| RestAPI
-    TestAgent -.->|test calls| ServicePort
-    RestAPI -->|depends on| ServicePort
+    subgraph Core["APPLICATION CORE"]
+        Domain[Domain Entities<br/>Product<br/>• Business Rules<br/>• Validation Logic]
+        RepoInterface[ProductRepository<br/>Interface/Port]
+        Domain --> RepoInterface
+    end
     
-    RepoPort <-.->|implements| MongoAdapter
-    RepoPort <-.->|implements| MockAdapter
-    MongoAdapter -->|persists to| MongoDB
+    subgraph SecondaryAdapter["Secondary Adapter (Outbound/Driven)"]
+        RepoImpl[ProductRepositoryMongo<br/>MongoDB Implementation]
+    end
     
-    style Hexagon fill:#ffe6e6,stroke:#333,stroke-width:3px
-    style Ports fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
-    style BusinessLogic fill:#fff9c4,stroke:#f57c00,stroke-width:2px
-    style ServicePort fill:#90caf9,stroke:#1565c0,stroke-width:2px
-    style RepoPort fill:#90caf9,stroke:#1565c0,stroke-width:2px
+    HTTP --> Handler
+    Handler -->|uses| Service
+    Service -->|orchestrates| Domain
+    RepoInterface -.->|implements| RepoImpl
+    RepoImpl --> MongoDB
     
-    style RestAPI fill:#a5d6a7,stroke:#2e7d32,stroke-width:2px
-    style TestAgent fill:#a5d6a7,stroke:#2e7d32,stroke-width:2px
-    
-    style MongoAdapter fill:#c5e1a5,stroke:#558b2f,stroke-width:2px
-    style MockAdapter fill:#c5e1a5,stroke:#558b2f,stroke-width:2px
-    
-    style UserSide fill:#f5f5f5,stroke:#666,stroke-width:2px
-    style ServerSide fill:#f5f5f5,stroke:#666,stroke-width:2px
-    style Domain fill:#fff59d,stroke:#f57c00,stroke-width:2px
+    style Core fill:#e1f5ff,stroke:#333,stroke-width:4px
+    style Domain fill:#b3e5fc,stroke:#333,stroke-width:2px
+    style RepoInterface fill:#b3e5fc,stroke:#333,stroke-width:2px
+    style Handler fill:#c8e6c9,stroke:#333,stroke-width:2px
+    style Service fill:#fff9c4,stroke:#333,stroke-width:2px
+    style RepoImpl fill:#ffccbc,stroke:#333,stroke-width:2px
 ```
-
-### Diagram Legend:
-- **🔵 Ports (Interfaces)**: Define boundaries - what comes in (Primary) and what goes out (Secondary)
-- **🟢 Adapters (Implementations)**: Connect external world to ports
-- **Solid arrows (→)**: Dependencies and usage
-- **Dashed arrows (-.->)**: Interface implementation or loose coupling
 
 ## Benefits in Our Implementation
 
