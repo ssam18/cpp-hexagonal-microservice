@@ -7,49 +7,70 @@ A production-ready Product Catalog microservice built with C++ following the **H
 This microservice implements the Hexagonal Architecture pattern (Ports and Adapters):
 
 ```mermaid
-graph TB
-    subgraph External["🌐 EXTERNAL WORLD"]
-        Client["HTTP Clients<br/>(curl, browsers, apps)"]
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#e3f2fd','primaryTextColor':'#000','primaryBorderColor':'#1976d2','lineColor':'#666','secondaryColor':'#fff9c4','tertiaryColor':'#c8e6c9'}}}%%
+flowchart LR
+    subgraph UserSide["&nbsp;&nbsp;&nbsp;👤 USER SIDE&nbsp;&nbsp;&nbsp;<br/><br/>What we provide to<br/>the end user&nbsp;&nbsp;&nbsp;"]
+        direction TB
+        Actor(("👤<br/>User"))
+        RestAPI["🔌 REST API<br/><b>ProductHandler</b><br/>(Boost.Beast)"]
+        TestAgent["🧪 Test<br/>Agent"]
+        Actor -->|"HTTP<br/>Request"| RestAPI
     end
-
-    subgraph PrimaryAdapters["📥 PRIMARY ADAPTERS (Inbound)<br/>Drive the Application"]
-        HttpHandler["🔌 ProductHandler<br/>(HTTP/REST Adapter)<br/>━━━━━━━━━━━━━━━<br/>• Routes HTTP requests<br/>• GET/POST/PUT/DELETE<br/>• HTTP ↔ DTOs"]
-    end
-
-    subgraph HexagonCore["⬡ HEXAGON CORE<br/>Technology Independent"]
-        subgraph ServiceLayer["🎯 SERVICE LAYER"]
-            ProductService["ProductService<br/>(Business Logic)<br/>━━━━━━━━━━━━━━━<br/>• getAllProducts<br/>• getProduct<br/>• createProduct<br/>• updateProduct<br/>• deleteProduct"]
+    
+    subgraph Hexagon["&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🎯 BUSINESS DOMAIN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>&nbsp;"]
+        direction TB
+        subgraph Ports["▫️ Ports (Interfaces)"]
+            ServicePort["🔵 <b>ProductService</b><br/><i>&lt;&lt;interface&gt;&gt;</i><br/>Primary Port"]
+            RepoPort["🔵 <b>ProductRepository</b><br/><i>&lt;&lt;interface&gt;&gt;</i><br/>Secondary Port"]
         end
         
-        subgraph DomainLayer["💎 DOMAIN LAYER"]
-            Product["Product Entity<br/>━━━━━━━━━━━━━━━<br/>• id, name, price, stock<br/>• isAvailable()<br/>• canFulfillOrder()<br/>• getStatus()<br/>• reduceStock()"]
-            ProductRepoInterface["ProductRepository<br/>(Interface/Port)<br/>━━━━━━━━━━━━━━━<br/>• findAll<br/>• findById<br/>• create<br/>• update<br/>• deleteById"]
+        subgraph BusinessLogic["💼 Business Logic"]
+            Domain["<b>Product Entity</b><br/>• Validation<br/>• Business Rules<br/>• Domain Logic"]
         end
+        
+        ServicePort -.->|uses| Domain
+        Domain -.->|needs| RepoPort
     end
-
-    subgraph SecondaryAdapters["📤 SECONDARY ADAPTERS (Outbound)<br/>Driven by Application"]
-        MongoAdapter["🔌 ProductRepositoryMongo<br/>(Database Adapter)<br/>━━━━━━━━━━━━━━━<br/>• Implements Repository<br/>• mongo-cxx-driver<br/>• Domain ↔ BSON"]
-    end
-
-    subgraph Infrastructure["🗄️ EXTERNAL INFRASTRUCTURE"]
-        MongoDB[(MongoDB<br/>Database)]
-    end
-
-    Client -->|HTTP Request| HttpHandler
-    HttpHandler -->|Uses| ProductService
-    ProductService -->|Uses| Product
-    ProductService -->|Depends on| ProductRepoInterface
-    MongoAdapter -.->|Implements| ProductRepoInterface
-    MongoAdapter -->|Queries| MongoDB
     
-    style HexagonCore fill:#e1f5ff,stroke:#0288d1,stroke-width:3px
-    style DomainLayer fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    style ServiceLayer fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    style PrimaryAdapters fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
-    style SecondaryAdapters fill:#fff9c4,stroke:#f9a825,stroke-width:2px
-    style Infrastructure fill:#ffebee,stroke:#c62828,stroke-width:2px
-    style External fill:#f5f5f5,stroke:#616161,stroke-width:2px
+    subgraph ServerSide["&nbsp;&nbsp;&nbsp;⚙️ SERVER SIDE&nbsp;&nbsp;&nbsp;<br/><br/>What we depend on<br/>DB, External Services&nbsp;&nbsp;&nbsp;"]
+        direction TB
+        MongoDB[("🗄️<br/>MongoDB<br/>Database")]
+        MongoAdapter["🔌 Database<br/><b>ProductRepositoryMongo</b><br/>(mongo-cxx-driver)"]
+        MockAdapter["🔌 Mock<br/><b>MockRepository</b><br/>(for testing)"]
+        MongoAdapter -->|"persists<br/>to"| MongoDB
+    end
+    
+    RestAPI -->|"depends<br/>on"| ServicePort
+    TestAgent -.->|"test<br/>calls"| ServicePort
+    
+    RepoPort <-.->|"implements"| MongoAdapter
+    RepoPort <-.->|"implements"| MockAdapter
+    
+    style Hexagon fill:#ffe6e6,stroke:#d32f2f,stroke-width:4px,color:#000
+    style Ports fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style BusinessLogic fill:#fff9c4,stroke:#f57c00,stroke-width:2px
+    style ServicePort fill:#90caf9,stroke:#1565c0,stroke-width:2px,color:#000
+    style RepoPort fill:#90caf9,stroke:#1565c0,stroke-width:2px,color:#000
+    
+    style RestAPI fill:#a5d6a7,stroke:#2e7d32,stroke-width:2px
+    style TestAgent fill:#c8e6c9,stroke:#388e3c,stroke-width:2px
+    
+    style MongoAdapter fill:#c5e1a5,stroke:#558b2f,stroke-width:2px
+    style MockAdapter fill:#dcedc8,stroke:#689f38,stroke-width:2px
+    
+    style UserSide fill:#fafafa,stroke:#424242,stroke-width:2px
+    style ServerSide fill:#fafafa,stroke:#424242,stroke-width:2px
+    style Domain fill:#fff59d,stroke:#f57c00,stroke-width:2px
+    style Actor fill:#64b5f6,stroke:#1976d2,stroke-width:2px
+    style MongoDB fill:#ffab91,stroke:#d84315,stroke-width:2px
 ```
+
+### 📊 Diagram Legend:
+- **🔵 Ports (Interfaces)**: Define boundaries - Primary (inbound) and Secondary (outbound)
+- **🔌 Adapters (Implementations)**: Connect external world to ports
+- **💼 Business Logic**: Core domain entities and rules
+- **Solid arrows (→)**: Dependencies and direct usage
+- **Dashed arrows (-.->)**: Interface implementation or loose coupling
 
 ### Key Principles
 
