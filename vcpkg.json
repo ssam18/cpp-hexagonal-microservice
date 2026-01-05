@@ -1,0 +1,13 @@
+{
+  "name": "product-catalog-service",
+  "version": "1.0.0",
+  "description": "A Product Catalog microservice using Hexagonal Architecture in C++",
+  "dependencies": [
+    "boost-beast",
+    "boost-asio",
+    "boost-system",
+    "nlohmann-json",
+    "mongo-cxx-driver",
+    "spdlog"
+  ]
+}
