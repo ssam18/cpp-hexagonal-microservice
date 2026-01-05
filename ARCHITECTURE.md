@@ -36,58 +36,43 @@ Adapters are implementations of ports that connect the application to the outsid
 
 ## In Our Product Catalog Microservice
 
-```
-                        External World
-                              │
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-        │     HTTP Request    │                     │
-        │                     ▼                     │
-        │         ┌───────────────────┐             │
-        │         │  ProductHandler   │ ◄───────────┤── Primary Adapter
-        │         │  (Boost.Beast)    │             │   (Inbound/Driving)
-        │         └───────────────────┘             │
-        │                     │                     │
-        │                     │ uses                │
-        │                     ▼                     │
-        │         ┌───────────────────┐             │
-        │         │  ProductService   │ ◄───────────┤── Primary Port
-        │         │    (Interface)    │             │   (Inbound)
-        │         └───────────────────┘             │
-        │                     │                     │
-        │                     │ orchestrates        │
-        │                     ▼                     │
-        │    ╔═══════════════════════════════╗     │
-        │    ║    APPLICATION CORE           ║     │
-        │    ║                               ║     │
-        │    ║  ┌─────────────────────────┐ ║     │
-        │    ║  │   Domain Entities       │ ║     │
-        │    ║  │   (Product)             │ ║     │
-        │    ║  │   • Business Rules      │ ║     │
-        │    ║  │   • Validation Logic    │ ║     │
-        │    ║  └─────────────────────────┘ ║     │
-        │    ║             │                 ║     │
-        │    ║             ▼                 ║     │
-        │    ║  ┌─────────────────────────┐ ║     │
-        │    ║  │  ProductRepository      │ ║     │
-        │    ║  │  (Interface/Port)       │ ║     │
-        │    ║  └─────────────────────────┘ ║     │
-        │    ║                               ║     │
-        │    ╚═══════════════════════════════╝     │
-        │                     │                     │
-        │                     │ implements          │
-        │                     ▼                     │
-        │         ┌───────────────────┐             │
-        │         │ProductRepositoryMo│ ◄───────────┤── Secondary Adapter
-        │         │      (MongoDB)    │             │   (Outbound/Driven)
-        │         └───────────────────┘             │
-        │                     │                     │
-        │                     │                     │
-        └─────────────────────┼─────────────────────┘
-                              │
-                              ▼
-                          MongoDB
+```mermaid
+graph TB
+    subgraph External["External World"]
+        HTTP[HTTP Request]
+        MongoDB[(MongoDB Database)]
+    end
+    
+    subgraph PrimaryAdapter["Primary Adapter (Inbound/Driving)"]
+        Handler[ProductHandler<br/>Boost.Beast]
+    end
+    
+    subgraph PrimaryPort["Primary Port (Inbound)"]
+        Service[ProductService<br/>Interface]
+    end
+    
+    subgraph Core["APPLICATION CORE"]
+        Domain[Domain Entities<br/>Product<br/>• Business Rules<br/>• Validation Logic]
+        RepoInterface[ProductRepository<br/>Interface/Port]
+        Domain --> RepoInterface
+    end
+    
+    subgraph SecondaryAdapter["Secondary Adapter (Outbound/Driven)"]
+        RepoImpl[ProductRepositoryMongo<br/>MongoDB Implementation]
+    end
+    
+    HTTP --> Handler
+    Handler -->|uses| Service
+    Service -->|orchestrates| Domain
+    RepoInterface -.->|implements| RepoImpl
+    RepoImpl --> MongoDB
+    
+    style Core fill:#e1f5ff,stroke:#333,stroke-width:4px
+    style Domain fill:#b3e5fc,stroke:#333,stroke-width:2px
+    style RepoInterface fill:#b3e5fc,stroke:#333,stroke-width:2px
+    style Handler fill:#c8e6c9,stroke:#333,stroke-width:2px
+    style Service fill:#fff9c4,stroke:#333,stroke-width:2px
+    style RepoImpl fill:#ffccbc,stroke:#333,stroke-width:2px
 ```
 
 ## Benefits in Our Implementation
@@ -133,13 +118,16 @@ class GraphQLHandler {
 
 ## Dependency Flow
 
-```
-HTTP Handler ──uses──> ProductService ──uses──> ProductRepository (interface)
-                                                        ▲
-                                                        │
-                                                  implements
-                                                        │
-                                              ProductRepositoryMongo
+```mermaid
+graph LR
+    Handler[HTTP Handler] -->|uses| Service[ProductService]
+    Service -->|uses| Interface[ProductRepository<br/>Interface]
+    Impl[ProductRepositoryMongo] -.->|implements| Interface
+    
+    style Interface fill:#fff9c4,stroke:#333,stroke-width:2px
+    style Impl fill:#ffccbc,stroke:#333,stroke-width:2px
+    style Handler fill:#c8e6c9,stroke:#333,stroke-width:2px
+    style Service fill:#b3e5fc,stroke:#333,stroke-width:2px
 ```
 
 **Key Point**: Dependencies point INWARD toward the domain.
@@ -147,18 +135,32 @@ HTTP Handler ──uses──> ProductService ──uses──> ProductRepositor
 ## Comparison: Traditional vs Hexagonal
 
 ### Traditional Layered Architecture
+```mermaid
+graph LR
+    Controller --> Service
+    Service --> Repository
+    Repository --> Database
+    
+    style Controller fill:#ffcdd2,stroke:#333
+    style Service fill:#ffcdd2,stroke:#333
+    style Repository fill:#ffcdd2,stroke:#333
+    style Database fill:#ffcdd2,stroke:#333
 ```
-Controller → Service → Repository → Database
-    ↓           ↓           ↓
-  Tight coupling across layers
-```
+*Tight coupling across layers*
 
 ### Hexagonal Architecture
+```mermaid
+graph LR
+    HTTP[HTTP Adapter] --> Service[ProductService]
+    Service --> Interface[Repository<br/>Interface]
+    Mongo[MongoDB Adapter] -.->|implements| Interface
+    
+    style Interface fill:#c8e6c9,stroke:#333,stroke-width:3px
+    style HTTP fill:#b3e5fc,stroke:#333
+    style Service fill:#fff9c4,stroke:#333
+    style Mongo fill:#ffccbc,stroke:#333
 ```
-HTTP Adapter → Service → Repository Interface ← MongoDB Adapter
-                            ↑
-                      (Dependency Inversion)
-```
+*Dependency Inversion - Loose coupling*
 
 ## File Organization
 
